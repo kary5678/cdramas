@@ -2,12 +2,11 @@
 # collect various details of interest. Drama details are stored in a spreadsheet.
 
 cdramas_df <- read.csv("data/cdramas_basic.csv", header = TRUE)
-cdramas_df$mdl_url
 
 details_df <- data.frame(mdl_url = character(), title_zh = character(), 
                          genres = character(), tags = character())
 
-for (end_url in cdramas_df$mdl_url[1390:2692]) {
+for (end_url in cdramas_df$mdl_url) {
   drama_url <- paste0("https://mydramalist.com", end_url)
   page <- read_html(drama_url)
   
