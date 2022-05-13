@@ -2,3 +2,4 @@
 
 library(rvest)
 library(stringr)
+library(ggplot2)
