@@ -2,10 +2,13 @@
 # Interested in Chinese dramas released from 2012 to 2022 as of 5/10/22, with
 # at least a 1.0 rating to filter out less relevant dramas that would have missing data
 
+library(rvest)
+library(tidyverse)
+
 cdramas_df <- data.frame(title_en = character(), mdl_url = character(),
                         year = integer(), eps = integer())
 
-for (num in 1:135) {
+for (num in 1:158) {
   mdl_url <- paste0("https://mydramalist.com/search?adv=titles&ty=68&co=2&re=2012,2022&rt=1,10&st=3&so=top&page=", num)
   page <- read_html(mdl_url)
   
