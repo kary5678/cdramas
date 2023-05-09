@@ -30,13 +30,20 @@ Information about each Chinese drama is scraped from the site [MyDramaList](http
 
 ## Growth of the Industry
 
+Over time, it seems that there are more and more hit shows per year - which may be attributed to a growth in the number of shows released. To determine if this is the case, the histogram below displays the number of dramas that have been released every year for the past decade.
+
 ```{r fig.height=4}
 ggplot(data=cdramas_df, aes(x=factor(year)))+
   geom_bar()+
-  labs(title="Number of Chinese Dramas Released 2012-2021",
+  labs(title="Number of Chinese Dramas Released 2012-2022",
        x="Year", y="Dramas Released")+
   theme_minimal()
+```
 
+Over time, there has been a general increase in the number of dramas released per year. There is a notable spike from 2019 to 2020; the jump is over 100 dramas. Perhaps the increase can be attributed to the COVID-19 quarantine periods, as there is more demand for indoor entertainment.
+
+
+```{r}
 ggplot(data=cdramas_df, aes(x=factor(year), y=eps))+
   geom_boxplot()+
   labs(title="Distribution of Chinese Drama Episode Counts 2012-2022",
@@ -47,5 +54,29 @@ ggplot(data=cdramas_df, aes(x=factor(year), y=eps))+
 ## Fun Facts
 
 ## The Love of "Love"
+
+Something that bothers me is the use of the word "love" in most titles, when the native title has nothing to do with the word.
+
+### Top Words Used
+
+```{r word count}
+# Find the top 50 words used in drama titles
+title_words <- gsub("[^A-Za-z0-9\\' ]", " ", paste(cdramas_df$title_en, collapse=" ")) #single string
+title_words <- unlist(strsplit(tolower(title_words), "\\s+")) #character vector of all words
+word_freq <- sort(table(title_words), decreasing = TRUE)[1:50]
+
+# Find the top words used in the native titles
+title_chars <- gsub("\\s+", "", paste(cdramas_df$title_zh, collapse = ""))
+title_chars <- unlist(strsplit(title_chars, split = ""))
+char_freq <- sort(table(title_chars), decreasing = TRUE)[1:50]
+
+top_words <- t(data.frame(words = paste0(rownames(word_freq), " (", word_freq, ")"),
+                          chars = paste0(rownames(char_freq), " (", char_freq, ")")))
+rownames(top_words) <- c("English:", "Native:")
+knitr::kable(top_words, align = paste0(rep("c", 50), collapse=""),
+             col.names = 1:50,
+             caption = "Top 50 Words Used in Titles (With Counts)")
+```
+
 
 ## Hard Working Cast Members
