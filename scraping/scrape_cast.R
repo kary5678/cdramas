@@ -1,6 +1,9 @@
 # With URLs obtained from scrape_titles.R, visit each drama's cast page
 # collect names of cast members for each dramas (producers, etc. included)
 
+library(rvest)
+library(tidyverse)
+
 cdramas_df <- read.csv("data/cdramas.csv", header = TRUE)
 
 cast_df <- data.frame(mdl_url = character(), actor_url = character(),

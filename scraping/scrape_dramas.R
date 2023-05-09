@@ -1,6 +1,9 @@
 # With URLs obtained from scrape_titles.R, visit each drama's page to further
 # collect various details of interest. Drama details are stored in a spreadsheet.
 
+library(rvest)
+library(tidyverse)
+
 cdramas_df <- read.csv("data/cdramas_basic.csv", header = TRUE)
 
 details_df <- data.frame(mdl_url = character(), title_zh = character(), 
