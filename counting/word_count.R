@@ -13,4 +13,4 @@ title_chars <- gsub("\\s+", "", paste(cdramas_df$title_zh, collapse = ""))
 title_chars <- unlist(strsplit(title_chars, split = ""))
 char_freq <- sort(table(title_chars), decreasing = TRUE)
 output2 <- char_freq[1:50]
-cat(paste(rownames(output2), output, sep=":"), sep = ", ")
+cat(paste(rownames(output2), output2, sep=":"), sep = ", ")
