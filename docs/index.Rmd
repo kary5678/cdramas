@@ -11,13 +11,15 @@ date: "Last updated: May 9, 2023"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
-
-cdramas_df <- read.csv("../data/cdramas.csv", header = TRUE)
-cast_df <- read.csv("../data/cdrama_casts.csv", header = TRUE)
+library(ggplot2)
+library(RSQLite)
 ```
 
-```{r libraries}
-library(ggplot2)
+```{r setup2}
+cdramas_df <- read.csv("../data/cdramas.csv", header = TRUE)
+cast_df <- read.csv("../data/cdrama_casts.csv", header = TRUE)
+
+dcon <- dbConnect(SQLite(), dbname = "cdramas.sqlite")
 ```
 
 ## Motivation
@@ -53,30 +55,142 @@ ggplot(data=cdramas_df, aes(x=factor(year), y=eps))+
 
 ## Fun Facts
 
+### The Longest Dramas
+
+```{r}
+# Identify longest dramas
+most_eps <- dbGetQuery(dcon, "
+  SELECT title_en, year, eps
+  FROM cdramas
+  ORDER BY eps DESC LIMIT 20")
+knitr::kable(most_eps)
+```
+
+### Misclassified Dramas
+
+One thing I disagree with the MDL site on is the classification of wuxia dramas. Per Wikipedia, wuxia "is a genre of Chinese fiction concerning the adventures of martial artists in ancient China." Many titles are classified on MDL as wuxias when in reality they are xianxias or xuanhuans with fantasy elements. Which dramas aren't actually wuxias?
+
+```{r}
+# Identify fantasy "wuxia" dramas
+wuxias <- dbGetQuery(dcon, "
+  SELECT title_en, year, eps
+  FROM cdramas
+  WHERE genres LIKE '%Fantasy%' AND genres LIKE '%Wuxia%'
+  ORDER BY year DESC")
+knitr::kable(wuxias)
+```
+
 ## The Love of "Love"
 
 Something that bothers me is the use of the word "love" in most titles, when the native title has nothing to do with the word.
 
+```{r}
+# Find the number of dramas with love in their English title
+love_count <- dbGetQuery(dcon, "
+  SELECT count(*)
+  FROM cdramas
+  WHERE LOWER(cdramas.title_en) LIKE '%love%'")
+knitr::kable(love_count)
+```
+
 ### Top Words Used
 
 ```{r word count}
-# Find the top 50 words used in drama titles
+# Find the top words used in drama titles
 title_words <- gsub("[^A-Za-z0-9\\' ]", " ", paste(cdramas_df$title_en, collapse=" ")) #single string
 title_words <- unlist(strsplit(tolower(title_words), "\\s+")) #character vector of all words
-word_freq <- sort(table(title_words), decreasing = TRUE)[1:50]
+word_freq <- sort(table(title_words), decreasing = TRUE)[1:20]
 
 # Find the top words used in the native titles
 title_chars <- gsub("\\s+", "", paste(cdramas_df$title_zh, collapse = ""))
 title_chars <- unlist(strsplit(title_chars, split = ""))
-char_freq <- sort(table(title_chars), decreasing = TRUE)[1:50]
+char_freq <- sort(table(title_chars), decreasing = TRUE)[1:20]
 
 top_words <- t(data.frame(words = paste0(rownames(word_freq), " (", word_freq, ")"),
                           chars = paste0(rownames(char_freq), " (", char_freq, ")")))
 rownames(top_words) <- c("English:", "Native:")
-knitr::kable(top_words, align = paste0(rep("c", 50), collapse=""),
-             col.names = 1:50,
-             caption = "Top 50 Words Used in Titles (With Counts)")
+knitr::kable(top_words, align = paste0(rep("c", 20), collapse=""),
+             col.names = 1:20,
+             caption="Top 20 Words Used in Titles (With Counts)")
 ```
 
 
-## Hard Working Cast Members
+## Examination of Industry Personnel
+
+```{r}
+format_table_links <- function(table) {
+  # Input table is 3 columns in order: text, url, count
+  table[,1] <- paste0("[", table[,1], "](https://mydramalist.com", table[,2], ")")
+  return(table[, c(1,3)])
+}
+```
+
+### Hard Working Cast Members
+
+```{r}
+# Find people who have been in the most dramas (can include directors, etc.)
+hubs <- dbGetQuery(dcon, "
+  SELECT actor, actor_url, count(*)
+  FROM casts
+  GROUP BY actor_url
+  ORDER BY count(*) DESC LIMIT 20")
+hubs <- format_table_links(hubs)
+colnames(hubs) <- c("Person", "Dramas")
+knitr::kable(hubs, caption="People Who Have Worked on the Most Dramas",
+             row.names=TRUE)
+```
+
+#### Most Hard Working Since 2018
+
+```{r}
+# Find actors who have been in the most dramas since 2018
+hubs2 <- dbGetQuery(dcon, "
+  SELECT actor, actor_url, count(*)
+  FROM cdramas INNER JOIN casts ON cdramas.mdl_url = casts.mdl_url
+  WHERE year >= 2018 AND LOWER(casts.type) LIKE '%role%'
+  GROUP BY actor_url
+  ORDER BY count(*) DESC LIMIT 20")
+hubs2 <- format_table_links(hubs2)
+colnames(hubs2) <- c("Person", "Dramas")
+knitr::kable(hubs2, caption="People Who Have Worked on the Most Dramas Since 2018",
+             row.names=TRUE)
+```
+
+### Most Romantic People
+
+```{r}
+# Who are actors most involved in Romance dramas?
+hubs_romance <- dbGetQuery(dcon, "
+  SELECT actor, actor_url, count(*) as num_dramas
+  FROM cdramas INNER JOIN casts ON cdramas.mdl_url = casts.mdl_url
+  WHERE LOWER(cdramas.genres) LIKE '%romance%' AND 
+        LOWER(casts.type) LIKE '%role%'
+  GROUP BY actor_url
+  ORDER BY count(*) DESC LIMIT 20")
+hubs_romance <- format_table_links(hubs_romance)
+colnames(hubs_romance) <- c("Person", "Dramas")
+knitr::kable(hubs_romance, row.names=TRUE,
+             caption="People Who Have Been Involved in the Most Romance Dramas")
+```
+
+### Most Involved Dramas
+
+```{r}
+# Find dramas with the largest cast size
+hubs_dramas <- dbGetQuery(dcon, "
+  SELECT cdramas.title_en, cdramas.title_zh, cdramas.mdl_url, count(*)
+  FROM cdramas INNER JOIN casts ON cdramas.mdl_url = casts.mdl_url
+  GROUP BY cdramas.mdl_url 
+  ORDER BY count(*) DESC LIMIT 20")
+hubs_dramas$title_en <- paste0(hubs_dramas$title_en, " (", hubs_dramas$title_zh,")")
+hubs_dramas <- format_table_links(subset(hubs_dramas, select=-title_zh))
+colnames(hubs_dramas) <- c("Drama", "Personnel")
+knitr::kable(hubs_dramas, row.names=TRUE,
+             caption="Dramas That Involve the Most People")
+```
+
+## Genre Breakdown
+
+```{r}
+dbDisconnect(dcon)
+```
