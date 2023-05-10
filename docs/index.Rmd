@@ -6,7 +6,7 @@ output:
     toc: true
     toc_float:
       collapsed: false
-date: "Last updated: May 9, 2023"
+date: "Last updated: May 10, 2023"
 ---
 
 ```{r setup, include=FALSE}
@@ -28,7 +28,18 @@ Chinese dramas consist of a wide variety of genres. Over time, the industry has 
 
 ## Data Source
 
-Information about each Chinese drama is scraped from the site [MyDramaList](https://mydramalist.com/), a database consisting of release information for Asian dramas and movies. I am interested in their list of [Chinese dramas](https://mydramalist.com/search?adv=titles&ty=68&co=2&st=3&so=top), specifically dramas released in 2012 to the end of 2022. To be considered, the drama also has to be rated by at least one user.
+Information about each Chinese drama is scraped from the site [MyDramaList](https://mydramalist.com/), a database consisting of release information for Asian dramas and movies. I am interested in their list of [Chinese dramas](https://mydramalist.com/search?adv=titles&ty=68&co=2&st=3&so=top), specifically dramas released in 2012 to the end of 2022. To be considered, the drama also has to be rated by at least one user. The following fields are obtained:
+
+* Page ID (unique, used to determine URL)
+* Native title
+* English title
+* Year of release
+* Episode count
+* Genres
+* Tags
+* Cast members
+
+The code used to scrape the data is included in the [GitHub repository.](https://github.com/kary5678/cdramas)
 
 ## Growth of the Industry
 
@@ -120,7 +131,7 @@ knitr::kable(top_words, align = paste0(rep("c", 20), collapse=""),
 ```{r}
 format_table_links <- function(table) {
   # Input table is 3 columns in order: text, url, count
-  table[,1] <- paste0("[", table[,1], "](https://mydramalist.com", table[,2], ")")
+  table[,1] <- paste0("[", table[,1], "](https://mydramalist.com", table[,2], "){target='_blank'}")
   return(table[, c(1,3)])
 }
 ```
