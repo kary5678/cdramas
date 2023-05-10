@@ -13,6 +13,7 @@ date: "Last updated: May 10, 2023"
 knitr::opts_chunk$set(echo = FALSE)
 library(ggplot2)
 library(RSQLite)
+library(knitr)
 ```
 
 ```{r setup2}
@@ -74,7 +75,11 @@ ggplot(data=cdramas_df, aes(x=factor(year), y=eps))+
 
 ## Fun Facts
 
+In this section, I will quickly satisfy some of the curiosities I've had with regards to the Chinese drama scene.
+
 ### The Longest Dramas
+
+Many of my friends complain about the long episode count of Chinese dramas. What are the top 20 longest dramas by episode count?
 
 ```{r}
 # Identify longest dramas
@@ -84,7 +89,7 @@ most_eps <- dbGetQuery(dcon, "
   ORDER BY eps DESC LIMIT 20")
 most_eps$title_en <- paste0(most_eps$title_en, " (", most_eps$title_zh,")")
 most_eps <- format_table_links(subset(most_eps, select=-title_zh))
-knitr::kable(most_eps, col.names=c("Title", "Year", "Episodes"))
+knitr::kable(most_eps, col.names=c("Title", "Year", "Episodes"), row.names=TRUE)
 ```
 
 ### Misclassified Dramas
@@ -100,7 +105,7 @@ wuxias <- dbGetQuery(dcon, "
   ORDER BY year DESC")
 wuxias$title_en <- paste0(wuxias$title_en, " (", wuxias$title_zh,")")
 wuxias <- format_table_links(subset(wuxias, select=-title_zh))
-knitr::kable(wuxias, col.names=c("Title", "Year", "Episodes"))
+knitr::kable(wuxias, col.names=c("Title", "Year", "Episodes"), row.names=TRUE)
 ```
 
 ## The Love of "Love"
