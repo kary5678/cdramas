@@ -11,6 +11,7 @@ date: "Last updated: May 10, 2023"
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+library(tidyverse)
 library(ggplot2)
 library(RSQLite)
 library(knitr)
@@ -48,7 +49,7 @@ Information about each Chinese drama is scraped from the site [MyDramaList](http
 * Tags
 * Cast members
 
-The code used to scrape the data is included in the [GitHub repository.](https://github.com/kary5678/cdramas)
+There have been 3146 dramas released in the time period of interest. There have been 77971 assignments of people to projects, for 11913 unique personnel in the industry. The code used to scrape the data is included in the [GitHub repository.](https://github.com/kary5678/cdramas)
 
 ## Growth of the Industry
 
@@ -112,16 +113,9 @@ knitr::kable(wuxias, col.names=c("Title", "Year", "Episodes"), row.names=TRUE)
 
 Something that bothers me is the use of the word "love" in most titles, when the native title has nothing to do with the word.
 
-```{r}
-# Find the number of dramas with love in their English title
-love_count <- dbGetQuery(dcon, "
-  SELECT count(*)
-  FROM cdramas
-  WHERE LOWER(cdramas.title_en) LIKE '%love%'")
-knitr::kable(love_count)
-```
-
 ### Top Words Used
+
+From the scraped data, there are 10943 words when all English titles are broken down, and 16728 characters across all native titles. Let's see what the most common words/characters are across all titles.
 
 ```{r word count}
 # Find the top words used in drama titles
@@ -142,6 +136,96 @@ knitr::kable(top_words, align = paste0(rep("c", 20), collapse=""),
              caption="Top 20 Words Used in Titles (With Counts)")
 ```
 
+Excluding common particles such as "the" and "of", which occur the most often to no surprise, there are 386 occurrences of the word "love". To put this in perspective, there are 3146 dramas. Furthermore, not all 386 of these dramas actually use the word "love" in the native title. 
+
+
+### Love Introduced in Translation
+
+How many of these titles with the word "love" in the English title actually use the word love (or a similar term) in the native title?
+
+```{r}
+# Find the number of dramas with love in their English title
+love_count <- dbGetQuery(dcon, "
+  SELECT count(*) as love_count
+  FROM cdramas
+  WHERE LOWER(cdramas.title_en) LIKE '%love%'")
+love_count <- love_count$love_count
+
+# Find the number of dramas with love in both English and native title
+love_titles <- dbGetQuery(dcon, "
+  SELECT count(*) as love_count
+  FROM cdramas
+  WHERE LOWER(cdramas.title_en) LIKE '%love%' AND 
+        (cdramas.title_zh LIKE '%爱%' OR cdramas.title_zh LIKE '%恋%' OR
+        cdramas.title_zh LIKE '%喜欢%')")
+love_titles <- love_titles$love_count
+
+# Create data
+data <- data.frame(
+  group = c("Yes", "No"),
+  value = c(love_titles, love_count-love_titles))
+
+# Compute the position of labels
+data <- data %>% 
+  arrange(desc(group)) %>%
+  mutate(prop = value / sum(data$value) *100) %>%
+  mutate(ypos = cumsum(prop)- 0.5*prop )
+
+# Basic piechart
+ggplot(data, aes(x="", y=prop, fill=group)) +
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start=0) +
+  theme_void() + 
+  theme(legend.position="none") +
+  labs(title='Of dramas that involve the word "love" in the English title,
+       does the native title involve the word "love" too?')+
+  geom_text(aes(y = ypos, label = paste(group, value, sep="\n")), color = "white", size=6) +
+  scale_fill_brewer(palette="Set2")
+```
+
+### Where is Love?
+
+Not only is the word "love" in many localized titles, there is also a pattern to its location in titles. For example, some hit dramas' titles include Ashes of Love, Eternal Love, and Intense Love. It seems that the localization is very formulaic - but is this actually the case? Or is there an even spread in the location of the word "love"?
+
+```{r}
+# How many titles end with the word love
+love_end <- dbGetQuery(dcon, "
+  SELECT count(*) as love_count
+  FROM cdramas
+  WHERE LOWER(cdramas.title_en) LIKE '%love'")
+love_end <- love_end$love_count
+
+# How many titles begin with the word love
+love_start <- dbGetQuery(dcon, "
+  SELECT count(*) as love_count
+  FROM cdramas
+  WHERE LOWER(cdramas.title_en) LIKE 'love%'")
+love_start <- love_start$love_count
+
+# Create data
+data2 <- data.frame(
+  group = c("Start", "Middle", "End"),
+  value = c(love_start, love_count-love_start-love_end, love_end))
+
+# Compute the position of labels
+data2 <- data2 %>% 
+  arrange(desc(group)) %>%
+  mutate(prop = value / sum(data$value) *100) %>%
+  mutate(ypos = cumsum(prop)- 0.5*prop )
+
+# Basic piechart
+ggplot(data2, aes(x="", y=prop, fill=group)) +
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start=0) +
+  theme_void() + 
+  theme(legend.position="none") +
+  labs(title='Of dramas that include the word "love" in the English title, 
+          where in the title does the word "love" occur?')+
+  geom_text(aes(y = ypos, label = paste(group, value, sep="\n")), color = "white", size=6) +
+  scale_fill_brewer(palette="Set2")
+```
+
+Most of the English titles contain the word "love" at the very end of the title, as I have observed. However, the spread in the location of the word is arguably more even than I thought it was initially.
 
 ## Examination of Industry Personnel
 
@@ -210,6 +294,10 @@ knitr::kable(hubs_dramas, row.names=TRUE,
 ```
 
 ## Genre Breakdown
+
+### Most Common Genres
+
+### Most Common Tags
 
 ```{r}
 dbDisconnect(dcon)
