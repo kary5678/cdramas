@@ -70,3 +70,28 @@ for (genre in unique_genres) {
 }
 
 write.csv(genres_df, "data/cdrama_genres.csv", row.names = FALSE)
+
+
+
+# Generate tags dataframe -------------------------------------------------
+# cdramas_df <- read.csv("data/cdramas.csv", header = TRUE)
+unique_tags <- paste(cdramas_df$tags, collapse=", ")
+unique_tags <- unlist(strsplit(unique_tags, split = ", "))
+# There are 1877 unique tags if we include them all
+# Filter to those that have at least 20 dramas
+unique_tags <- table(unique_tags)[table(unique_tags) >= 20]
+unique_tags <- names(unique_tags)
+# Remove the "" tag
+unique_tags <- unique_tags[-1]
+
+tags_df <- data.frame(
+  mdl_url = cdramas_df$mdl_url,
+  title_en = cdramas_df$title_en,
+  title_zh = cdramas_df$title_zh,
+  tags = cdramas_df$tags)
+
+for (tag in unique_tags) {
+  tags_df[tag] <- as.numeric(grepl(tag, cdramas_df$tags, fixed=TRUE))
+}
+
+write.csv(tags_df, "data/cdrama_tags.csv", row.names = FALSE)
