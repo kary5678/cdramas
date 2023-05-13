@@ -21,6 +21,7 @@ library(knitr)
 cdramas_df <- read.csv("../data/cdramas.csv", header = TRUE)
 cast_df <- read.csv("../data/cdrama_casts.csv", header = TRUE)
 genres_df <- read.csv("../data/cdrama_genres.csv", header = TRUE)
+tags_df <- read.csv("../data/cdrama_tags.csv", header = TRUE)
 
 dcon <- dbConnect(SQLite(), dbname = "cdramas.sqlite")
 ```
@@ -320,6 +321,29 @@ ggplot(genre_counts, aes(x=Genre, y=Count))+
 ```
 
 ### Most Common Tags
+
+Next, what are some popular themes or tropes? This can be examined by analyzing drama tags submitted by MDL users. There are 1800+ unique tags across the dramas analyzed, so the focus will be on the top 25 most common tags.
+
+```{r}
+tag_counts <- tags_df %>%
+  select(-c(mdl_url, title_en, title_zh, tags)) %>%
+  colSums %>%
+  as.data.frame()
+colnames(tag_counts) <- "Count"
+tag_counts$tag <- rownames(tag_counts)
+tag_counts$tag <- gsub("\\.", " ", tag_counts$tag)
+
+tag_counts <- arrange(tag_counts, desc(Count))
+tag_counts <- tag_counts[1:25, ]
+tag_counts$tag <- factor(tag_counts$tag, levels=rev(tag_counts$tag))
+
+ggplot(tag_counts, aes(x=tag, y=Count))+
+  geom_bar(stat="identity", fill="rosybrown1")+
+  coord_flip(expand=FALSE)+
+  labs(title="Top 25 Tags by Number of Dramas",
+       y="Number of Dramas", x="")+
+  theme_minimal()
+```
 
 ```{r}
 dbDisconnect(dcon)
