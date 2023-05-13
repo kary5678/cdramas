@@ -1,9 +1,6 @@
 # With URLs obtained from scrape_titles.R, visit each drama's page to further
 # collect various details of interest. Drama details are stored in a spreadsheet.
 
-library(rvest)
-library(tidyverse)
-
 cdramas_df <- read.csv("data/cdramas_basic.csv", header = TRUE)
 
 details_df <- data.frame(mdl_url = character(), title_zh = character(), 
@@ -52,4 +49,24 @@ for (end_url in cdramas_df$mdl_url) {
 
 cdramas_df <- merge(cdramas_df, details_df, by = "mdl_url", sort = FALSE) # column order does change
 write.csv(cdramas_df, "data/cdramas.csv", row.names = FALSE)
-  
+
+
+# Generate genre dataframe ------------------------------------------------
+# cdramas_df <- read.csv("data/cdramas.csv", header = TRUE)
+unique_genres <- paste(cdramas_df$genres, collapse=", ")
+unique_genres <- unlist(strsplit(unique_genres, split = ", "))
+unique_genres <- sort(unique(unique_genres))
+# Remove the "" genre
+unique_genres <- unique_genres[-1]
+
+genres_df <- data.frame(
+  mdl_url = cdramas_df$mdl_url,
+  title_en = cdramas_df$title_en,
+  title_zh = cdramas_df$title_zh,
+  genres = cdramas_df$genres)
+
+for (genre in unique_genres) {
+  genres_df[genre] <- as.numeric(grepl(genre, cdramas_df$genres, fixed=TRUE))
+}
+
+write.csv(genres_df, "data/cdrama_genres.csv", row.names = FALSE)
