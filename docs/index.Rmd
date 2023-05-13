@@ -6,7 +6,7 @@ output:
     toc: true
     toc_float:
       collapsed: false
-date: "Last updated: May 10, 2023"
+date: "Last updated: May 13, 2023"
 ---
 
 ```{r setup, include=FALSE}
@@ -20,6 +20,7 @@ library(knitr)
 ```{r setup2}
 cdramas_df <- read.csv("../data/cdramas.csv", header = TRUE)
 cast_df <- read.csv("../data/cdrama_casts.csv", header = TRUE)
+genres_df <- read.csv("../data/cdrama_genres.csv", header = TRUE)
 
 dcon <- dbConnect(SQLite(), dbname = "cdramas.sqlite")
 ```
@@ -296,6 +297,27 @@ knitr::kable(hubs_dramas, row.names=TRUE,
 ## Genre Breakdown
 
 ### Most Common Genres
+
+There are 32 unique genres across the dramas analyzed, although the dramas can be multiple genres. What are the most common genres?
+
+```{r}
+genre_counts <- genres_df %>%
+  select(-c(mdl_url, title_en, title_zh, genres)) %>%
+  colSums %>%
+  as.data.frame()
+colnames(genre_counts) <- "Count"
+genre_counts$Genre <- rownames(genre_counts)
+genre_counts$Genre <- gsub("Sci.Fi", "Sci-Fi", genre_counts$Genre)
+genre_counts$Genre <- gsub("Martial.Arts", "Martial Arts", genre_counts$Genre)
+genre_counts$Genre <- factor(genre_counts$Genre, levels=
+                               genre_counts$Genre[order(genre_counts$Count)])
+ggplot(genre_counts, aes(x=Genre, y=Count))+
+  geom_bar(stat="identity", fill="darkturquoise")+
+  coord_flip(expand=FALSE)+
+  labs(title="Number of Dramas of Each Genre",
+       y="Number of Dramas", x="")+
+  theme_minimal()
+```
 
 ### Most Common Tags
 
